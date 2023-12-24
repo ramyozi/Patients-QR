@@ -2,12 +2,12 @@
   <div class="dashboard-container">
     <div class="header">
       <img src="../assets/person-icon.jpg" alt="Logo" class="logo" @click="toggleUserInfo">
-      <div v-if="currentUser" class="user-info-modal" :class="{ 'active': showUserInfo }">
+      <div v-if="currentUser && additionalUserInfo" class="user-info-modal" :class="{ 'active': showUserInfo }">
         <button @click="toggleUserInfo" class="close-button">×</button>
         <p><strong>Email:</strong> {{ currentUser.email }}</p>
-        <p><strong>Role:</strong> {{ currentUser.role }}</p>
-        <p><strong>First Name:</strong> {{ currentUser.firstName }}</p>
-        <p><strong>Last Name:</strong> {{ currentUser.lastName }}</p>
+        <p><strong>First Name:</strong> {{ additionalUserInfo.firstName }}</p>
+        <p><strong>Last Name:</strong> {{ additionalUserInfo.lastName }}</p>
+        <p><strong>Role:</strong> {{ additionalUserInfo.role }}</p>
         <button @click="logout">Logout</button>
       </div>
     </div>
@@ -34,6 +34,8 @@
 
 <script>
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default {
   name: 'DashboardPage',
@@ -41,13 +43,22 @@ export default {
     return {
       showUserInfo: false,
       currentUser: null,
+      additionalUserInfo: null,
     };
   },
   created() {
     const auth = getAuth();
-    onAuthStateChanged(auth, (user) => {
+    const db = getFirestore();
+    
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         this.currentUser = user;
+
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          this.additionalUserInfo = userDoc.data();
+        }
       } else {
         this.$router.push('/');
       }
@@ -201,7 +212,6 @@ export default {
 }
 
 .close-button:hover {
-  color: #ff0000; 
+  color: #ff0000;
 }
-
 </style>
